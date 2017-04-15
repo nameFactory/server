@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-from flask import Flask, jsonify
+from hashlib import sha256
+from uuid import uuid4
+
+from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
@@ -8,18 +11,25 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 
-class User(db.Model):
+class ModelMixins:
+    def as_dict(self, blacklist=[]):
+        return {
+            c.name: getattr(self, c.name)
+            for c in self.__table__.columns
+            if c.name not in blacklist
+        }
+
+
+class User(db.Model, ModelMixins):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(20))
+    username = db.Column(db.String(32))
+    password = db.Column(db.String(64))
+    email = db.Column(db.String(64))
 
-    def __init__(self, username):
+    def __init__(self, username, plaintext_password, email=None):
         self.username = username
-
-    def __repr__(self):
-        return '<User {}>'.format(self.username)
-
-    def as_dict(self):
-        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        self.password = sha256(plaintext_password.encode()).hexdigest()
+        self.email = email
 
 
 @app.route('/')
@@ -27,17 +37,17 @@ def hello():
     return 'Hello.'
 
 
-@app.route('/user')
-def get_users():
-    return jsonify([u.as_dict() for u in User.query.all()])
-
-
-@app.route('/user/<int:user_id>')
-def get_user(user_id):
-    user = User.query.filter_by(id=user_id).first()
-    if user:
-        return jsonify(user.as_dict())
-    return jsonify({'errors': ['User not found']})
+@app.route('/user', methods=['POST'])
+def new_user():
+    username = str(uuid4())
+    password = str(uuid4())
+    email = request.get_json().get('email')
+    user = User(username, password, email)
+    db.session.add(user)
+    db.session.commit()
+    result = user.as_dict(blacklist=['id'])
+    result['password'] = password  # on creation, return password in plain text
+    return jsonify(result)
 
 
 if __name__ == '__main__':
