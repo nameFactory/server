@@ -32,6 +32,14 @@ class User(db.Model, ModelMixins):
         self.email = email
 
 
+class Ranking(db.Model, ModelMixins):
+    id = db.Column(db.Integer, primary_key=True)
+    id_user = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    def __init__(self, id_user):
+        self.id_user = id_user
+
+
 @app.route('/')
 def hello():
     return 'Hello.'
