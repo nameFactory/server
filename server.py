@@ -84,36 +84,35 @@ name2tag = db.Table(
 class Name(db.Model, ModelMixins):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64))
+    is_male = db.Column(db.Boolean)
     tags = db.relationship('Tag', secondary=name2tag)
 
-    def __init__(self, name):
+    def __init__(self, name, is_male):
         self.name = name
+        self.is_male = is_male
 
     def as_dict(self):
         return {
             'id': self.id,
             'name': self.name,
+            'is_male': self.is_male,
             'tags': [tag.id for tag in self.tags]
         }
 
 
 def populate_db_with_names():
     polish = Tag('polish')
-    male = Tag('male')
-    female = Tag('female')
     db.session.add(polish)
-    db.session.add(male)
-    db.session.add(female)
     db.session.flush()
     filetags = [
-        # (file, [tag1, tag2, ...])
-        ('data/pl_male.txt', [polish, male]),
-        ('data/pl_female.txt', [polish, female])
+        # (file, [tag1, tag2, ...], is_male)
+        ('data/pl_male.txt', [polish], True),
+        ('data/pl_female.txt', [polish], False)
     ]
     for ft in filetags:
         with open(ft[0], 'r') as f:
             for n in f:
-                name = Name(n.strip())
+                name = Name(n.strip(), ft[2])
                 db.session.add(name)
                 db.session.flush([name])
                 for tag in ft[1]:
