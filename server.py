@@ -84,17 +84,20 @@ name2tag = db.Table(
 class Name(db.Model, ModelMixins):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64))
+    description = db.Column(db.Text())
     is_male = db.Column(db.Boolean)
     tags = db.relationship('Tag', secondary=name2tag)
 
-    def __init__(self, name, is_male):
+    def __init__(self, name, is_male, description=''):
         self.name = name
         self.is_male = is_male
+        self.description = description
 
     def as_dict(self):
         return {
             'id': self.id,
             'name': self.name,
+            'description': self.description,
             'is_male': self.is_male,
             'tags': [tag.id for tag in self.tags]
         }
