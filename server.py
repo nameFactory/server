@@ -46,6 +46,9 @@ class Tag(db.Model, ModelMixins):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64))
 
+    def __init__(self, name):
+        self.name = name
+
 
 class Ranking2Tag(db.Model, ModelMixins):
     id_ranking = db.Column(
@@ -71,18 +74,27 @@ class User2Ranking(db.Model, ModelMixins):
         self.id_ranking = id_ranking
 
 
+name2tag = db.Table(
+    'name2tag',
+    db.Column('id_name', db.Integer, db.ForeignKey('name.id')),
+    db.Column('id_tag', db.Integer, db.ForeignKey('tag.id'))
+)
+
+
 class Name(db.Model, ModelMixins):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64))
+    tags = db.relationship('Tag', secondary=name2tag)
 
+    def __init__(self, name):
+        self.name = name
 
-class Name2Tag(db.Model, ModelMixins):
-    id_name = db.Column(
-        db.Integer, db.ForeignKey('name.id'), primary_key=True
-    )
-    id_tag = db.Column(
-        db.Integer, db.ForeignKey('tag.id'), primary_key=True
-    )
+    def as_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'tags': [tag.id for tag in self.tags]
+        }
 
 
 def plaintext_to_hash(s):
