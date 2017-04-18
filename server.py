@@ -97,6 +97,30 @@ class Name(db.Model, ModelMixins):
         }
 
 
+def populate_db_with_names():
+    polish = Tag('polish')
+    male = Tag('male')
+    female = Tag('female')
+    db.session.add(polish)
+    db.session.add(male)
+    db.session.add(female)
+    db.session.flush()
+    filetags = [
+        # (file, [tag1, tag2, ...])
+        ('data/pl_male.txt', [polish, male]),
+        ('data/pl_female.txt', [polish, female])
+    ]
+    for ft in filetags:
+        with open(ft[0], 'r') as f:
+            for n in f:
+                name = Name(n.strip())
+                db.session.add(name)
+                db.session.flush([name])
+                for tag in ft[1]:
+                    name.tags.append(tag)
+    db.session.commit()
+
+
 def plaintext_to_hash(s):
     return sha256(s.encode()).hexdigest()
 
