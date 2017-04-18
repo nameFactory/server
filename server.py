@@ -28,16 +28,55 @@ class User(db.Model, ModelMixins):
 
     def __init__(self, username, plaintext_password, email=None):
         self.username = username
-        self.password = sha256(plaintext_password.encode()).hexdigest()
+        self.password = plaintext_to_hash(plaintext_password)
         self.email = email
 
 
 class Ranking(db.Model, ModelMixins):
     id = db.Column(db.Integer, primary_key=True)
     id_user = db.Column(db.Integer, db.ForeignKey('user.id'))
+    ref_id = db.Column(db.Integer)
 
-    def __init__(self, id_user):
+    def __init__(self, id_user, ref_id):
         self.id_user = id_user
+        self.ref_id = ref_id
+
+
+class Tag(db.Model, ModelMixins):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64))
+
+
+class Ranking2Tag(db.Model, ModelMixins):
+    id_ranking = db.Column(
+        db.Integer, db.ForeignKey('ranking.id'), primary_key=True
+    )
+    id_tag = db.Column(
+        db.Integer, db.ForeignKey('tag.id'), primary_key=True
+    )
+
+    def __init__(self, id_ranking, id_tag):
+        self.id_ranking = id_ranking
+        self.id_tag = id_tag
+
+
+class User2Ranking(db.Model, ModelMixins):
+    id_user = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
+    id_ranking = db.Column(
+        db.Integer, db.ForeignKey('ranking.id'), primary_key=True
+    )
+
+    def __init__(self, id_user, id_ranking):
+        self.id_user = id_user
+        self.id_ranking = id_ranking
+
+
+def plaintext_to_hash(s):
+    return sha256(s.encode()).hexdigest()
+
+
+def error(msg):
+    return jsonify({'errors': [msg]})
 
 
 @app.route('/')
@@ -56,6 +95,31 @@ def new_user():
     result = user.as_dict(blacklist=['id'])
     result['password'] = password  # on creation, return password in plain text
     return jsonify(result)
+
+
+@app.route('/ranking', methods=['POST'])
+def new_ranking():
+    data = request.get_json()
+    try:
+        username = data['username']
+        password = plaintext_to_hash(data['password'])
+        ref_id = data['ranking_id']
+        tags = data['tag_ids']
+    except KeyError:
+        return error(
+            'You have to provide username, password, ranking_id and tag_ids'
+        )
+    user = User.query.filter_by(username=username, password=password).first()
+    if not user:
+        return error('Invalid username/password')
+    ranking = Ranking(user.id, ref_id)
+    db.session.add(ranking)
+    db.session.flush()
+    for tag in tags:
+        db.session.add(Ranking2Tag(ranking.id, tag))
+    db.session.add(User2Ranking(user.id, ranking.id))
+    db.session.commit()
+    return jsonify({})
 
 
 if __name__ == '__main__':
