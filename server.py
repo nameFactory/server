@@ -71,6 +71,20 @@ class User2Ranking(db.Model, ModelMixins):
         self.id_ranking = id_ranking
 
 
+class Name(db.Model, ModelMixins):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64))
+
+
+class Name2Tag(db.Model, ModelMixins):
+    id_name = db.Column(
+        db.Integer, db.ForeignKey('name.id'), primary_key=True
+    )
+    id_tag = db.Column(
+        db.Integer, db.ForeignKey('tag.id'), primary_key=True
+    )
+
+
 def plaintext_to_hash(s):
     return sha256(s.encode()).hexdigest()
 
