@@ -138,7 +138,7 @@ def hello():
 def new_user():
     username = str(uuid4())
     password = str(uuid4())
-    email = request.get_json().get('email')
+    email = request.get_json().get('email') or ''
     user = User(username, password, email)
     db.session.add(user)
     db.session.commit()
