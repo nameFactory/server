@@ -172,5 +172,17 @@ def new_ranking():
     return jsonify({})
 
 
+@app.route('/names_db')
+def get_names_db():
+    tags = Tag.query.all()
+    names = Name.query.all()
+    return jsonify(
+        {
+            'tags': [tag.as_dict() for tag in tags],
+            'names': [name.as_dict() for name in names]
+        }
+    )
+
+
 if __name__ == '__main__':
     app.run()
