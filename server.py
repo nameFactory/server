@@ -186,6 +186,30 @@ def new_ranking():
     return jsonify({})
 
 
+@app.route('/match', methods=['POST'])
+def add_match():
+    data = request.get_json()
+    try:
+        username = data['username']
+        password = plaintext_to_hash(data['password'])
+        ref_id = data['ranking_id']
+        winner_id = data['winner_id']
+        loser_id = data['loser_id']
+    except KeyError:
+        return error(
+            'You have to provide username, password, ranking_id, winner_id '
+            'and loser_id'
+        )
+    user = User.query.filter_by(username=username, password=password).first()
+    if not user:
+        return error('Invalid username/password')
+    ranking = Ranking.query.filter_by(id_user=user.id, ref_id=ref_id).one()
+    match = Match(ranking.id, winner_id, loser_id)
+    db.session.add(match)
+    db.session.commit()
+    return jsonify({})
+
+
 @app.route('/names_db')
 def get_names_db():
     tags = Tag.query.all()
