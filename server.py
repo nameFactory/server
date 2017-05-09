@@ -34,10 +34,10 @@ class User(db.Model, ModelMixins):
 
 class Ranking(db.Model, ModelMixins):
     id = db.Column(db.Integer, primary_key=True)
-    id_user = db.Column(db.Integer, db.ForeignKey('user.id'))
+    id_user_creator = db.Column(db.Integer, db.ForeignKey('user.id'))
 
-    def __init__(self, id_user):
-        self.id_user = id_user
+    def __init__(self, id_user_creator):
+        self.id_user_creator = id_user_creator
 
 
 class Tag(db.Model, ModelMixins):
