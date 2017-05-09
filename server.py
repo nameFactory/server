@@ -105,11 +105,13 @@ class Name(db.Model, ModelMixins):
 
 class Match(db.Model, ModelMixins):
     id = db.Column(db.Integer, primary_key=True)
+    id_user = db.Column(db.Integer, db.ForeignKey('user.id'))
     id_ranking = db.Column(db.Integer, db.ForeignKey('ranking.id'))
     id_winner = db.Column(db.Integer, db.ForeignKey('name.id'))
     id_loser = db.Column(db.Integer, db.ForeignKey('name.id'))
 
-    def __init__(self, id_ranking, id_winner, id_loser):
+    def __init__(self, id_user, id_ranking, id_winner, id_loser):
+        self.id_user = id_user
         self.id_ranking = id_ranking
         self.id_winner = id_winner
         self.id_loser = id_loser
@@ -207,7 +209,7 @@ def add_match():
         id_user=user.id, ref_id=ref_id
     ).one().id_ranking
     ranking = Ranking.query.filter_by(id=ranking_id).one()
-    match = Match(ranking.id, winner_id, loser_id)
+    match = Match(user.id, ranking.id, winner_id, loser_id)
     db.session.add(match)
     db.session.commit()
     return jsonify({})
