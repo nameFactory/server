@@ -35,11 +35,9 @@ class User(db.Model, ModelMixins):
 class Ranking(db.Model, ModelMixins):
     id = db.Column(db.Integer, primary_key=True)
     id_user = db.Column(db.Integer, db.ForeignKey('user.id'))
-    ref_id = db.Column(db.Integer)
 
-    def __init__(self, id_user, ref_id):
+    def __init__(self, id_user):
         self.id_user = id_user
-        self.ref_id = ref_id
 
 
 class Tag(db.Model, ModelMixins):
@@ -68,10 +66,12 @@ class User2Ranking(db.Model, ModelMixins):
     id_ranking = db.Column(
         db.Integer, db.ForeignKey('ranking.id'), primary_key=True
     )
+    ref_id = db.Column(db.Integer, primary_key=True)
 
-    def __init__(self, id_user, id_ranking):
+    def __init__(self, id_user, id_ranking, ref_id):
         self.id_user = id_user
         self.id_ranking = id_ranking
+        self.ref_id = ref_id
 
 
 name2tag = db.Table(
@@ -176,12 +176,12 @@ def new_ranking():
     user = User.query.filter_by(username=username, password=password).first()
     if not user:
         return error('Invalid username/password')
-    ranking = Ranking(user.id, ref_id)
+    ranking = Ranking(user.id)
     db.session.add(ranking)
     db.session.flush()
     for tag in tags:
         db.session.add(Ranking2Tag(ranking.id, tag))
-    db.session.add(User2Ranking(user.id, ranking.id))
+    db.session.add(User2Ranking(user.id, ranking.id, ref_id))
     db.session.commit()
     return jsonify({})
 
@@ -203,7 +203,10 @@ def add_match():
     user = User.query.filter_by(username=username, password=password).first()
     if not user:
         return error('Invalid username/password')
-    ranking = Ranking.query.filter_by(id_user=user.id, ref_id=ref_id).one()
+    ranking_id = User2Ranking.query.filter_by(
+        id_user=user.id, ref_id=ref_id
+    ).one().id_ranking
+    ranking = Ranking.query.filter_by(id=ranking_id).one()
     match = Match(ranking.id, winner_id, loser_id)
     db.session.add(match)
     db.session.commit()
