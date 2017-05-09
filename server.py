@@ -103,6 +103,18 @@ class Name(db.Model, ModelMixins):
         }
 
 
+class Match(db.Model, ModelMixins):
+    id = db.Column(db.Integer, primary_key=True)
+    id_ranking = db.Column(db.Integer, db.ForeignKey('ranking.id'))
+    id_winner = db.Column(db.Integer, db.ForeignKey('name.id'))
+    id_loser = db.Column(db.Integer, db.ForeignKey('name.id'))
+
+    def __init__(self, id_ranking, id_winner, id_loser):
+        self.id_ranking = id_ranking
+        self.id_winner = id_winner
+        self.id_loser = id_loser
+
+
 def populate_db_with_names():
     polish = Tag('polish')
     db.session.add(polish)
