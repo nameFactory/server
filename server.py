@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from hashlib import sha256
+import json
 from uuid import uuid4
 
 from flask import Flask, jsonify, request
@@ -119,6 +120,15 @@ class Match(db.Model, ModelMixins):
         self.id_loser = id_loser
 
 
+def get_name_to_desc():
+    def decode(s):
+        return bytes(s, 'ascii').decode('unicode-escape')
+
+    with open('desc.json', 'r') as f:
+        raw = ''.join(f.readlines())
+        return {decode(k): decode(v) for k, v in json.loads(raw).items()}
+
+
 def populate_db_with_names():
     polish = Tag('polish')
     db.session.add(polish)
@@ -128,10 +138,11 @@ def populate_db_with_names():
         ('data/pl_male.txt', [polish], True),
         ('data/pl_female.txt', [polish], False)
     ]
+    name2desc = get_name_to_desc()
     for ft in filetags:
         with open(ft[0], 'r') as f:
             for n in f:
-                name = Name(n.strip(), ft[2])
+                name = Name(n.strip(), ft[2], name2desc.get(n.strip(), ''))
                 db.session.add(name)
                 db.session.flush([name])
                 for tag in ft[1]:
