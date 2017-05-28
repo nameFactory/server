@@ -35,9 +35,11 @@ class User(db.Model, ModelMixins):
 class Ranking(db.Model, ModelMixins):
     id = db.Column(db.Integer, primary_key=True)
     id_user_creator = db.Column(db.Integer, db.ForeignKey('user.id'))
+    is_male = db.Column(db.Boolean)
 
-    def __init__(self, id_user_creator):
+    def __init__(self, id_user_creator, is_male):
         self.id_user_creator = id_user_creator
+        self.is_male = is_male
 
 
 class Tag(db.Model, ModelMixins):
@@ -170,15 +172,17 @@ def new_ranking():
         username = data['username']
         password = plaintext_to_hash(data['password'])
         ref_id = data['ranking_id']
+        is_male = int(data['is_male'])
         tags = data['tag_ids']
     except KeyError:
         return error(
-            'You have to provide username, password, ranking_id and tag_ids'
+            'You have to provide username, password, ranking_id, is_male '
+            'and tag_ids'
         )
     user = User.query.filter_by(username=username, password=password).first()
     if not user:
         return error('Invalid username/password')
-    ranking = Ranking(user.id)
+    ranking = Ranking(user.id, is_male)
     db.session.add(ranking)
     db.session.flush()
     for tag in tags:
