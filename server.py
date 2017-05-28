@@ -231,5 +231,35 @@ def get_names_db():
     )
 
 
+@app.route('/match_list', methods=['POST'])
+def get_matches():
+    data = request.get_json()
+    try:
+        username = data['username']
+        password = plaintext_to_hash(data['password'])
+        ref_id = data['ranking_id']
+    except KeyError:
+        return error('You have to provide username, password and ranking_id')
+    user = User.query.filter_by(username=username, password=password).first()
+    if not user:
+        return error('Invalid username/password')
+    ranking_id = User2Ranking.query.filter_by(
+        id_user=user.id, ref_id=ref_id
+    ).one().id_ranking
+    is_male = Ranking.query.filter_by(id=ranking_id).one().is_male
+    sql = ('select id_name from (select id_name, count(*) as c '
+           'from ranking2_tag rt join name2tag nt on nt.id_tag = rt.id_tag '
+           'where rt.id_ranking = {} group by id_name) join name on '
+           'name.id = id_name where name.is_male = {} and c = '
+           '(select count(*) from ranking2_tag where id_ranking = {}) order '
+           'by random() limit 2;'.format(ranking_id, is_male, ranking_id))
+    result = list()
+    for _ in range(25):
+        r = db.engine.execute(sql)
+        pair = [x[0] for x in r]
+        result.append(pair)
+    return jsonify(result)
+
+
 if __name__ == '__main__':
     app.run()
