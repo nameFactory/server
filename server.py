@@ -257,7 +257,7 @@ def get_matches():
     ranking_id = User2Ranking.query.filter_by(
         id_user=user.id, ref_id=ref_id
     ).one().id_ranking
-    is_male = Ranking.query.filter_by(id=ranking_id).one().is_male
+    is_male = int(Ranking.query.filter_by(id=ranking_id).one().is_male)
     sql = ('select id_name from (select id_name, count(*) as c '
            'from ranking2_tag rt join name2tag nt on nt.id_tag = rt.id_tag '
            'where rt.id_ranking = {} group by id_name) join name on '
@@ -268,8 +268,8 @@ def get_matches():
     for _ in range(25):
         r = db.engine.execute(sql)
         pair = [x[0] for x in r]
-        result.append(pair)
-    return jsonify(result)
+        result.append({'name_id1': pair[0], 'name_id2': pair[1]})
+    return jsonify({'result': result})
 
 
 @app.route('/top50')
@@ -287,7 +287,7 @@ def get_top50():
                 'top50': [x[0] for x in r],
             }
         )
-    return jsonify(result)
+    return jsonify({'result': result})
 
 
 if __name__ == '__main__':
