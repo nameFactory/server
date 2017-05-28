@@ -261,5 +261,23 @@ def get_matches():
     return jsonify(result)
 
 
+@app.route('/top50')
+def get_top50():
+    # TODO: calculate top 50 instead of returning random result
+    result = list()
+    sql_template = ('select id from name where is_male = {} '
+                    'order by random() limit 50')
+    for is_male in (False, True):
+        sql = sql_template.format(int(is_male))
+        r = db.engine.execute(sql)
+        result.append(
+            {
+                'is_male': is_male,
+                'top50': [x[0] for x in r],
+            }
+        )
+    return jsonify(result)
+
+
 if __name__ == '__main__':
     app.run()
