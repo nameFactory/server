@@ -272,19 +272,45 @@ def get_matches():
     return jsonify({'result': result})
 
 
+def _elo_rank(names):
+    def get_expected_score(a, b):
+        return 1 / (1 + 10**((b-a)/400))
+    name2score = dict()
+    for id_winner, id_loser in names:
+        name2score[id_winner] = 1200
+        name2score[id_loser] = 1200
+    K = 64
+    for id_winner, id_loser in names:
+        winner_score = name2score[id_winner]
+        loser_score = name2score[id_loser]
+        winner_expected_score = get_expected_score(winner_score, loser_score)
+        loser_expected_score = get_expected_score(loser_score, winner_score)
+        name2score[id_winner] += K * (1 - winner_expected_score)
+        name2score[id_loser] += K * loser_expected_score
+    return [
+        k for k, v in
+        sorted(
+            ((k, v) for k, v in name2score.items()),
+            key=lambda x: x[1],
+            reverse=True
+        )
+    ]
+
+
 @app.route('/top50')
 def get_top50():
-    # TODO: calculate top 50 instead of returning random result
     result = list()
-    sql_template = ('select id from name where is_male = {} '
-                    'order by random() limit 50')
+    sql_template = (
+        'select id_winner, id_loser from match m '
+        'join name n on m.id_winner = n.id where n.is_male = {}'
+    )
     for is_male in (False, True):
         sql = sql_template.format(int(is_male))
         r = db.engine.execute(sql)
         result.append(
             {
                 'is_male': is_male,
-                'top50': [x[0] for x in r],
+                'top50': _elo_rank(r)[:50],
             }
         )
     return jsonify({'result': result})
