@@ -184,7 +184,7 @@ def new_ranking():
         password = plaintext_to_hash(data['password'])
         ref_id = data['ranking_id']
         is_male = int(data['is_male'])
-        tags = data['tag_ids']
+        tags = data.get('tag_ids', [])
     except KeyError:
         return error(
             'You have to provide username, password, ranking_id, is_male '
