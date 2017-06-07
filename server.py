@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 from hashlib import sha256
 import json
+import random
 from uuid import uuid4
 
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
+import numpy as np
+from numpy.random import choice
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
@@ -258,17 +261,42 @@ def get_matches():
         id_user=user.id, ref_id=ref_id
     ).one().id_ranking
     is_male = int(Ranking.query.filter_by(id=ranking_id).one().is_male)
-    sql = ('select id_name from (select id_name, count(*) as c '
-           'from ranking2_tag rt join name2tag nt on nt.id_tag = rt.id_tag '
-           'where rt.id_ranking = {} group by id_name) join name on '
-           'name.id = id_name where name.is_male = {} and c = '
-           '(select count(*) from ranking2_tag where id_ranking = {}) order '
-           'by random() limit 2;'.format(ranking_id, is_male, ranking_id))
+    raw = db.engine.execute('select id from name where is_male = ?', is_male)
+
+    name2score = {
+        x[0]: 0
+        for x in raw
+    }
+    name2usage = {
+        x[0]: False
+        for x in raw
+    }
+    matches = db.engine.execute(
+        'select id_winner, id_loser from match where id_user = ?', user.id
+    )
+    for m in matches:
+        if m[0] not in name2score or m[1] not in name2score:
+            continue
+        name2score[m[0]] += 1
+        name2score[m[1]] -= 1
+        for x in (m[0], m[1]):
+            name2usage[x] = True
+    not_used = [k for k, v in name2usage.items() if not v]
+    used = [k for k, v in name2usage.items() if v]
+
     result = list()
     for _ in range(25):
-        r = db.engine.execute(sql)
-        pair = [x[0] for x in r]
-        result.append({'name_id1': pair[0], 'name_id2': pair[1]})
+        if len(not_used) > 2:
+            n1, n2 = random.sample(not_used, 2)
+        else:
+            p = np.array(list(name2score.values()))
+            p = np.arctan(p) + 1.7
+            p = p/np.sum(p)
+            n1, n2 = choice(
+                list(name2score.keys()), size=2, replace=False, p=p
+            )
+            n1, n2 = random.sample(used, 2)
+        result.append({'name_id1': n1, 'name_id2': n2})
     return jsonify({'result': result})
 
 
