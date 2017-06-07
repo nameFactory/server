@@ -267,6 +267,8 @@ def get_matches():
         x[0]: 0
         for x in raw
     }
+
+    raw = db.engine.execute('select id from name where is_male = ?', is_male)
     name2usage = {
         x[0]: False
         for x in raw
