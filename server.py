@@ -330,13 +330,12 @@ def _elo_rank(names):
 @app.route('/top50')
 def get_top50():
     result = list()
-    sql_template = (
+    sql = (
         'select id_winner, id_loser from match m '
-        'join name n on m.id_winner = n.id where n.is_male = {}'
+        'join name n on m.id_winner = n.id where n.is_male = ?'
     )
     for is_male in (False, True):
-        sql = sql_template.format(int(is_male))
-        r = db.engine.execute(sql)
+        r = db.engine.execute(sql, is_male)
         result.append(
             {
                 'is_male': is_male,
